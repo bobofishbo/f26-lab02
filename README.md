@@ -50,22 +50,15 @@ lost its tail, and a day with no bookings returned no free time at all.
 **1. No test leaves free time at the end of the day — *controllability*.**
 In five of the six tests the last booking ends exactly at `DAY_END` (1020):
 `[540,1020)`, `[720,1020)`, `[900,1020)`, `[900,1020)`, and `[660,1020)` after merging. So
-when the loop exits, `cursor == dayEnd` and the missing tail gap is empty anyway. Those
-tests produce correct answers from broken code — the input never creates a tail to lose.
+when the loop exits, `cursor == dayEnd` and the missing tail gap is empty anyway.
 
 **2. `returnedSlotsNeverOverlapABooking` runs the bug but cannot see it — *observability*.**
 This one books only `[600,660)` on a day ending at 1020, so it *does* trigger the bug: the
 calculator drops `[660,1020)`, six free hours. But its assertion loops over the slots that
-came back and only checks each one does not overlap a booking. That claim is one-directional
-— it can catch a slot that is present and wrong, never one that is missing. The fewer slots
-returned, the fewer assertions run. `return List.of();` would satisfy it on every input.
+came back and only checks each one does not overlap a booking. It can catch a slot that is present and wrong, never one that is missing. 
 
-**3. The input space is never varied — *controllability*.**
-`freeSlots` is never called with an empty booking list, the case where the bug is total
-(the whole day should come back free; the buggy code returns `[]`). Every test also runs on
-the same hardcoded 9:00–17:00 day, because `DAY_START`/`DAY_END` are constants and the
-private `free(bookings)` helper does not expose the day parameters at all — no test *can*
-vary the business hours.
+**3. The input space is never varied / missing edge cases — *controllability*.**
+`freeSlots` is never called with an empty booking list.
 
 ### Why high coverage did not save it
 
@@ -75,8 +68,7 @@ line can never be marked red. Weakness 2 above is exactly the case: that test ex
 line and both sides of every branch, which is what pushed the class to 100%, while its
 assertion was too weak to notice the wrong result. Coverage is also blind to assertions
 entirely — delete every `assertEquals` in the file, keep the calls, and the report is
-identical at 100%. Confirming this, fixing the bug made coverage go *up* (80 → 91
-instructions, 8 → 10 branches): the missing code was never counted against the class.
+identical at 100%.
 
 The property in `AvailabilityProperties` catches all three because it quantifies over the
 *input* (every minute of the business day) instead of the *output*, so an omission has
@@ -86,4 +78,4 @@ nowhere to hide.
 
 Claude Code (model: Claude Opus 5) — used to explore the starter, draft the
 `everyMinuteOfTheDayIsExactlyOneOfBookedOrFree` property, diagnose and fix the missing
-trailing free slot, and draft this audit.
+trailing free slot.
